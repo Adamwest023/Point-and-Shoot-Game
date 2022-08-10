@@ -77,6 +77,40 @@ function drawScore() {
     ctx.fillText('Score: ' + score, 55, 80);
 };
 
+//explosion effect on click
+let explosions = [];
+class Explosion {
+    constructor(x, y, size) {
+        this.image = new Image();
+        this.image.src = 'assets/images/boom.png';
+        this.spriteWidth = 200;
+        this.spriteHeight = 179;
+        this.size = size;
+        this.x = x;
+        this.y = y;
+        this.frame = 0;
+        this.sound = new Audio();
+        this.sound.src = 'assets/SFX/impsplat/impactsplat01.mp3.flac';
+        this.timeSinceLastFrame = 0;
+        this.frameInterval = 200;
+        this.markedForDeletion = false;
+    }
+    update(deltaTime) {
+        if (this.frame === 0) this.sound.play()
+        this.timeSinceLastFrame += deltaTime;
+        if (this.timeSinceLastFrame >= this.frameInterval) {
+            this.frame++;
+            this.timeSinceLastFrame = 0;
+
+            if (this.frame > 5) this.markedForDeletion = true;
+        }
+    }
+    draw() {
+        ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth
+            , this.spriteHeight, this.x, this.y - this.size / 4, this.size, this.size);
+    }
+}
+
 // event listener to see if collision happens with click 
 window.addEventListener('click', function (e) {
     //using getImageData to give us the coordinates of where the mouse was clicked
@@ -85,8 +119,10 @@ window.addEventListener('click', function (e) {
     const pc = detectPixelColor.data;
     ravens.forEach(object => {
         if (object.randomColors[0] === pc[0] && object.randomColors[1] === pc[1] && object.randomColors[2] === pc[2]) {
+            //collision detected
             object.markedForDeletion = true;
             score++;
+            explosions.push(new Explosion(object.x, object.y, object.width));
         }
     });
 });
@@ -110,10 +146,11 @@ function animate(timestamp) {
     };
     drawScore();
     //uses spread operator to add each raven's update and draw methods to the animate function
-    [...ravens].forEach(object => object.update(deltaTime));
-    [...ravens].forEach(object => object.draw());
+    [...ravens, ...explosions].forEach(object => object.update(deltaTime));
+    [...ravens, ...explosions].forEach(object => object.draw());
     //creates an array with the same name that has removed any objects that are not marked for deletion
     ravens = ravens.filter(object => !object.markedForDeletion);
+    explosions = explosions.filter(object => !object.markedForDeletion);
 
     requestAnimationFrame(animate);
 }
