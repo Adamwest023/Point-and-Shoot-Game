@@ -12,7 +12,8 @@ collisionCanvas.height = window.innerHeight;
 
 //score keeping
 let score = 0;
-
+// game over 
+let gameOver = false;
 ctx.font = "50px Impact";
 
 //set these for the timestamp 
@@ -61,6 +62,7 @@ class Raven {
             else this.frame++;
             this.timeSinceFlap = 0;
         }
+        if (this.x < 0 - this.width) gameOver = true;
     };
     draw() {
         collisionCtx.fillStyle = this.color;
@@ -68,6 +70,7 @@ class Raven {
         ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height);
     };
 };
+//particles for Ravens 
 
 //function to keep score
 function drawScore() {
@@ -76,6 +79,15 @@ function drawScore() {
     ctx.fillStyle = 'white';
     ctx.fillText('Score: ' + score, 55, 80);
 };
+//game over message 
+function drawGameOver() {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.fillText('Game Over, your score is ' + score, canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = 'white';
+    ctx.fillText('Game Over, your score is ' + score, canvas.width / 2 + 5, canvas.height / 2 + 5);
+}
+
 
 //explosion effect on click
 let explosions = [];
@@ -145,6 +157,7 @@ function animate(timestamp) {
         });
     };
     drawScore();
+    drawGameOver();
     //uses spread operator to add each raven's update and draw methods to the animate function
     [...ravens, ...explosions].forEach(object => object.update(deltaTime));
     [...ravens, ...explosions].forEach(object => object.draw());
@@ -152,7 +165,7 @@ function animate(timestamp) {
     ravens = ravens.filter(object => !object.markedForDeletion);
     explosions = explosions.filter(object => !object.markedForDeletion);
 
-    requestAnimationFrame(animate);
+    if (!gameOver) requestAnimationFrame(animate);
 }
 
 animate(0);
