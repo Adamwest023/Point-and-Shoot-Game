@@ -1,8 +1,14 @@
+//Canvas
 const canvas = document.getElementById('canvas1');
 const ctx = canvas.getContext('2d');
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+//collision Canvas
+const collisionCanvas = document.getElementById('collisionCanvas');
+const collisionCtx = collisionCanvas.getContext('2d');
+collisionCanvas.width = window.innerWidth;
+collisionCanvas.height = window.innerHeight;
 
 //score keeping
 let score = 0;
@@ -34,6 +40,11 @@ class Raven {
         this.maxFrame = 4;
         this.timeSinceFlap = 100;
         this.flapInterval = Math.random() * 50 + 50;
+        this.randomColors = [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255),
+        Math.floor(Math.random() * 255)];
+        this.color = 'rgb(' + this.randomColors[0] + ',' + this.randomColors[1]
+            + ',' + this.randomColors[2] + ')';
+
     }
     update(deltaTime) {
         //if the sprite hits the edge of the screen it will bounce back 
@@ -52,7 +63,8 @@ class Raven {
         }
     };
     draw() {
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        collisionCtx.fillStyle = this.color;
+        collisionCtx.fillRect(this.x, this.y, this.width, this.height);
         ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height);
     };
 };
@@ -67,15 +79,23 @@ function drawScore() {
 
 // event listener to see if collision happens with click 
 window.addEventListener('click', function (e) {
-    console.log(e.x,e.y);
-    const detectPixelColor = ctx.getImageData(e.x,e.y, 1,1);
+    //using getImageData to give us the coordinates of where the mouse was clicked
+    const detectPixelColor = collisionCtx.getImageData(e.x, e.y, 1, 1);
     console.log(detectPixelColor);
+    const pc = detectPixelColor.data;
+    ravens.forEach(object => {
+        if (object.randomColors[0] === pc[0] && object.randomColors[1] === pc[1] && object.randomColors[2] === pc[2]) {
+            object.markedForDeletion = true;
+            score++;
+        }
+    });
 });
 
 
 //timestamp is in milliseconds 
 function animate(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    collisionCtx.clearRect(0, 0, canvas.width, canvas.height);
     let deltaTime = timestamp - lastTime;
     lastTime = timestamp;
     timeToNextRaven += deltaTime;
@@ -83,6 +103,10 @@ function animate(timestamp) {
     if (timeToNextRaven > ravenInterval) {
         ravens.push(new Raven());
         timeToNextRaven = 0;
+        //sort function to create depth with raven sizes
+        ravens.sort(function (a, b) {
+            return a.width - b.width;
+        });
     };
     drawScore();
     //uses spread operator to add each raven's update and draw methods to the animate function
